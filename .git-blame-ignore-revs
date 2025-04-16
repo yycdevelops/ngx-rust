@@ -1,0 +1,15 @@
+# This file specifies the revisions hidden from the blame view in GitHub UI.
+#
+# You can achieve the same effect locally with "--ignore-revs-file":
+#
+#     git blame --ignore-revs-file .git-blame-ignore-revs
+#
+# or "blame.ignoreRevsFile" configuration option
+#
+#     git config --local blame.ignoreRevsFile .git-blame-ignore-revs
+#
+# See also:
+# https://docs.github.com/en/repositories/working-with-files/using-files/viewing-and-understanding-files
+
+# Tree-wide formatting change: max-width 120 -> 100
+d866b64a3c83105c20b0c005392f8e8fcaaf2066
