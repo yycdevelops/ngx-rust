@@ -59,7 +59,8 @@ pub trait Buffer {
     }
 }
 
-/// The `MutableBuffer` trait extends the `Buffer` trait and provides methods for working with a mutable buffer.
+/// The `MutableBuffer` trait extends the `Buffer` trait and provides methods for working with a
+/// mutable buffer.
 pub trait MutableBuffer: Buffer {
     /// Returns a mutable reference to the buffer contents as a byte slice.
     fn as_bytes_mut(&mut self) -> &mut [u8] {

@@ -84,7 +84,8 @@ macro_rules! http_variable_get {
     };
 }
 
-/// Wrapper struct for an [`ngx_http_request_t`] pointer, providing methods for working with HTTP requests.
+/// Wrapper struct for an [`ngx_http_request_t`] pointer, providing methods for working with HTTP
+/// requests.
 ///
 /// See <https://nginx.org/en/docs/dev/development_guide.html#http_request>
 #[repr(transparent)]
@@ -139,8 +140,8 @@ impl Request {
 
     /// Returns the result as an `Option` if it exists, otherwise `None`.
     ///
-    /// The option wraps an ngx_http_upstream_t instance, it will be none when the underlying NGINX request
-    /// does not have a pointer to a [`ngx_http_upstream_t`] upstream structure.
+    /// The option wraps an ngx_http_upstream_t instance, it will be none when the underlying NGINX
+    /// request does not have a pointer to a [`ngx_http_upstream_t`] upstream structure.
     ///
     /// [`ngx_http_upstream_t`] is best described in
     /// <https://nginx.org/en/docs/dev/development_guide.html#http_load_balancing>
@@ -231,7 +232,8 @@ impl Request {
     ///
     /// See <https://nginx.org/en/docs/dev/development_guide.html#http_request>
     pub fn add_header_in(&mut self, key: &str, value: &str) -> Option<()> {
-        let table: *mut ngx_table_elt_t = unsafe { ngx_list_push(&mut self.0.headers_in.headers) as _ };
+        let table: *mut ngx_table_elt_t =
+            unsafe { ngx_list_push(&mut self.0.headers_in.headers) as _ };
         unsafe { add_to_ngx_table(table, self.0.pool, key, value) }
     }
 
@@ -239,7 +241,8 @@ impl Request {
     ///
     /// See <https://nginx.org/en/docs/dev/development_guide.html#http_request>
     pub fn add_header_out(&mut self, key: &str, value: &str) -> Option<()> {
-        let table: *mut ngx_table_elt_t = unsafe { ngx_list_push(&mut self.0.headers_out.headers) as _ };
+        let table: *mut ngx_table_elt_t =
+            unsafe { ngx_list_push(&mut self.0.headers_out.headers) as _ };
         unsafe { add_to_ngx_table(table, self.0.pool, key, value) }
     }
 
@@ -316,18 +319,26 @@ impl Request {
         &self,
         uri: &str,
         module: &ngx_module_t,
-        post_callback: unsafe extern "C" fn(*mut ngx_http_request_t, *mut c_void, ngx_int_t) -> ngx_int_t,
+        post_callback: unsafe extern "C" fn(
+            *mut ngx_http_request_t,
+            *mut c_void,
+            ngx_int_t,
+        ) -> ngx_int_t,
     ) -> Status {
         let uri_ptr = unsafe { &mut ngx_str_t::from_str(self.0.pool, uri) as *mut _ };
         // -------------
         // allocate memory and set values for ngx_http_post_subrequest_t
-        let sub_ptr = self.pool().alloc(core::mem::size_of::<ngx_http_post_subrequest_t>());
+        let sub_ptr = self
+            .pool()
+            .alloc(core::mem::size_of::<ngx_http_post_subrequest_t>());
 
         // assert!(sub_ptr.is_null());
-        let post_subreq = sub_ptr as *const ngx_http_post_subrequest_t as *mut ngx_http_post_subrequest_t;
+        let post_subreq =
+            sub_ptr as *const ngx_http_post_subrequest_t as *mut ngx_http_post_subrequest_t;
         unsafe {
             (*post_subreq).handler = Some(post_callback);
-            (*post_subreq).data = self.get_module_ctx_ptr(module); // WARN: safety! ensure that ctx is already set
+            (*post_subreq).data = self.get_module_ctx_ptr(module); // WARN: safety! ensure that ctx
+                                                                   // is already set
         }
         // -------------
 
@@ -343,14 +354,17 @@ impl Request {
             )
         };
 
-        // previously call of ngx_http_subrequest() would ensure that the pointer is not null anymore
+        // previously call of ngx_http_subrequest() would ensure that the pointer is not null
+        // anymore
         let sr = unsafe { &mut *psr };
 
         /*
          * allocate fake request body to avoid attempts to read it and to make
          * sure real body file (if already read) won't be closed by upstream
          */
-        sr.request_body = self.pool().alloc(core::mem::size_of::<ngx_http_request_body_t>()) as *mut _;
+        sr.request_body =
+            self.pool()
+                .alloc(core::mem::size_of::<ngx_http_request_body_t>()) as *mut _;
 
         if sr.request_body.is_null() {
             return Status::NGX_ERROR;
@@ -401,7 +415,9 @@ impl crate::http::HttpModuleConfExt for Request {
 
 impl fmt::Debug for Request {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Request").field("request_", &self.0).finish()
+        f.debug_struct("Request")
+            .field("request_", &self.0)
+            .finish()
     }
 }
 

@@ -4,9 +4,9 @@
 /// opportunity to set custom data.
 ///
 /// This macro will define the NGINX callback type:
-/// `typedef ngx_int_t (*ngx_http_upstream_init_peer_pt)(ngx_http_request_t *r, ngx_http_upstream_srv_conf_t *us)`,
-/// we keep this macro name in-sync with its underlying NGINX type, this callback is required to
-/// initialize your peer.
+/// `typedef ngx_int_t (*ngx_http_upstream_init_peer_pt)(ngx_http_request_t *r,
+/// ngx_http_upstream_srv_conf_t *us)`, we keep this macro name in-sync with its underlying NGINX
+/// type, this callback is required to initialize your peer.
 ///
 /// Load Balancing: <https://nginx.org/en/docs/dev/development_guide.html#http_load_balancing>
 #[macro_export]

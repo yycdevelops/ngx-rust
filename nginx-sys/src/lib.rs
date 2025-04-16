@@ -24,7 +24,6 @@ mod bindings {
 }
 #[doc(no_inline)]
 pub use bindings::*;
-
 pub use event::*;
 pub use queue::*;
 
@@ -57,7 +56,8 @@ pub unsafe fn bytes_to_uchar(pool: *mut ngx_pool_t, data: &[u8]) -> Option<*mut 
     Some(ptr)
 }
 
-/// Convert a string slice (`&str`) to a raw pointer (`*mut u_char`) allocated in the given nginx memory pool.
+/// Convert a string slice (`&str`) to a raw pointer (`*mut u_char`) allocated in the given nginx
+/// memory pool.
 ///
 /// # Arguments
 ///
@@ -65,7 +65,8 @@ pub unsafe fn bytes_to_uchar(pool: *mut ngx_pool_t, data: &[u8]) -> Option<*mut 
 /// * `data` - The string slice to convert to a raw pointer.
 ///
 /// # Safety
-/// This function is marked as unsafe because it involves raw pointer manipulation and direct memory allocation using `ngx_pnalloc`.
+/// This function is marked as unsafe because it involves raw pointer manipulation and direct memory
+/// allocation using `ngx_pnalloc`.
 ///
 /// # Returns
 /// A raw pointer (`*mut u_char`) to the allocated memory containing the converted string data.
@@ -142,7 +143,10 @@ impl ngx_str_t {
     ///
     /// The caller must provide a valid pointer to a memory pool.
     pub unsafe fn from_bytes(pool: *mut ngx_pool_t, src: &[u8]) -> Option<Self> {
-        bytes_to_uchar(pool, src).map(|data| Self { data, len: src.len() })
+        bytes_to_uchar(pool, src).map(|data| Self {
+            data,
+            len: src.len(),
+        })
     }
 
     /// Create an `ngx_str_t` instance from a string slice (`&str`).
@@ -270,10 +274,12 @@ impl ngx_module_t {
 /// * `value` - The value string to add to the table entry.
 ///
 /// # Safety
-/// This function is marked as unsafe because it involves raw pointer manipulation and direct memory allocation using `str_to_uchar`.
+/// This function is marked as unsafe because it involves raw pointer manipulation and direct memory
+/// allocation using `str_to_uchar`.
 ///
 /// # Returns
-/// An `Option<()>` representing the result of the operation. `Some(())` indicates success, while `None` indicates a null table pointer.
+/// An `Option<()>` representing the result of the operation. `Some(())` indicates success, while
+/// `None` indicates a null table pointer.
 ///
 /// # Example
 /// ```rust
