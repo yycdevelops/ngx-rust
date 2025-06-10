@@ -16,7 +16,7 @@ use flate2::read::GzDecoder;
 use tar::Archive;
 use which::which;
 
-const UBUNTU_KEYSEVER: &str = "hkps://keyserver.ubuntu.com";
+const UBUNTU_KEYSEVER: &str = "hkp://keyserver.ubuntu.com";
 /// The default version of zlib to use if the `ZLIB_VERSION` environment variable is not present
 const ZLIB_DEFAULT_VERSION: &str = "1.3.1";
 /// Key 1: Mark Adler's public key. For zlib 1.3.1 and earlier
