@@ -8,12 +8,12 @@
 //! to specify a particular version of NGINX or an NGINX dependency:
 //!
 //! * `ZLIB_VERSION` (default 1.3.1) - zlib version
-//! * `PCRE2_VERSION` (default 10.42 for NGINX 1.22.0 and later, or 8.45 for earlier) - PCRE1 or PCRE2 version
-//! * `OPENSSL_VERSION` (default 3.2.4 for NGINX 1.22.0 and later, or 1.1.1w for earlier) - OpenSSL version
-//! * `NGX_VERSION` (default 1.26.3) - NGINX OSS version
+//! * `PCRE2_VERSION` (default 10.45 for NGINX 1.22.0 and later, or 8.45 for earlier) - PCRE1 or PCRE2 version
+//! * `OPENSSL_VERSION` (default 3.5.0 for NGINX 1.22.0 and later, or 1.1.1w for earlier) - OpenSSL version
+//! * `NGX_VERSION` (default 1.28.0) - NGINX OSS version
 //! * `NGX_DEBUG` (default to false) -  if set to true, then will compile NGINX `--with-debug` option
 //!
-//! For example, this is how you would compile the [examples](https://github.com/nginx/ngx-rust/tree/master/examples) using a specific version of NGINX and enabling
+//! For example, this is how you would compile the [examples](https://github.com/nginx/ngx-rust/tree/main/examples) using a specific version of NGINX and enabling
 //! debugging: `NGX_DEBUG=true NGX_VERSION=1.23.0 cargo build --package=examples --examples --release`
 //!
 //! To build Linux-only modules, use the "linux" feature: `cargo build --package=examples --examples --features=linux --release`
@@ -40,6 +40,11 @@ extern crate alloc;
 #[cfg(feature = "std")]
 extern crate std;
 
+pub mod allocator;
+#[cfg(feature = "async")]
+pub mod async_;
+pub mod collections;
+
 /// The core module.
 ///
 /// This module provides fundamental utilities needed to interface with many NGINX primitives.
@@ -62,6 +67,8 @@ pub mod http;
 ///
 /// This module provides an interface into the NGINX logger framework.
 pub mod log;
+
+pub mod sync;
 
 /// Define modules exported by this library.
 ///

@@ -1,3 +1,4 @@
+use core::error;
 use core::ffi::c_void;
 use core::fmt;
 use core::ptr::NonNull;
@@ -375,13 +376,13 @@ impl Request {
 
     /// Iterate over headers_in
     /// each header item is (&str, &str) (borrowed)
-    pub fn headers_in_iterator(&self) -> NgxListIterator {
+    pub fn headers_in_iterator(&self) -> NgxListIterator<'_> {
         unsafe { list_iterator(&self.0.headers_in.headers) }
     }
 
     /// Iterate over headers_out
     /// each header item is (&str, &str) (borrowed)
-    pub fn headers_out_iterator(&self) -> NgxListIterator {
+    pub fn headers_out_iterator(&self) -> NgxListIterator<'_> {
         unsafe { list_iterator(&self.0.headers_out.headers) }
     }
 }
@@ -448,7 +449,7 @@ impl<'a> From<&'a ngx_list_part_t> for ListPart<'a> {
 /// # Safety
 ///
 /// The caller has provided a valid [`ngx_str_t`] which can be dereferenced validly.
-pub unsafe fn list_iterator(list: &ngx_list_t) -> NgxListIterator {
+pub unsafe fn list_iterator(list: &ngx_list_t) -> NgxListIterator<'_> {
     NgxListIterator {
         part: Some((&list.part).into()),
         i: 0,
@@ -461,7 +462,7 @@ impl<'a> Iterator for NgxListIterator<'a> {
     // something like pub struct Header(ngx_table_elt_t);
     // then header would have key and value
 
-    type Item = (&'a str, &'a str);
+    type Item = (&'a NgxStr, &'a NgxStr);
 
     fn next(&mut self) -> Option<Self::Item> {
         let part = self.part.as_mut()?;
@@ -477,7 +478,12 @@ impl<'a> Iterator for NgxListIterator<'a> {
         }
         let header = &part.arr[self.i];
         self.i += 1;
-        Some((header.key.to_str(), header.value.to_str()))
+        unsafe {
+            Some((
+                NgxStr::from_ngx_str(header.key),
+                NgxStr::from_ngx_str(header.value),
+            ))
+        }
     }
 }
 
@@ -711,8 +717,7 @@ impl fmt::Display for InvalidMethod {
     }
 }
 
-#[cfg(feature = "std")]
-impl std::error::Error for InvalidMethod {}
+impl error::Error for InvalidMethod {}
 
 #[derive(Clone, PartialEq, Eq, Hash)]
 enum MethodInner {

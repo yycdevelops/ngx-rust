@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    "nginx-src",
     "nginx-sys",
     "examples",
 ]
@@ -9,7 +10,7 @@ edition = "2021"
 license = "Apache-2.0"
 homepage = "https://github.com/nginx/ngx-rust"
 repository = "https://github.com/nginx/ngx-rust"
-rust-version = "1.79.0"
+rust-version = "1.81.0"
 
 [package]
 name = "ngx"
@@ -24,25 +25,42 @@ homepage.workspace = true
 repository.workspace = true
 rust-version.workspace = true
 
+[package.metadata.docs.rs]
+all-features = true
+default-target = "x86_64-unknown-linux-gnu"
+targets = []
+
 [dependencies]
+allocator-api2 = { version = "0.2.21", default-features = false }
+async-task = { version = "4.7.1", optional = true }
+lock_api = "0.4.13"
 nginx-sys = { path = "nginx-sys", default-features=false, version = "0.5.0"}
+pin-project-lite = { version = "0.2.16", optional = true }
 
 [features]
-default = ["vendored","std"]
+default = ["std"]
+async = [
+    "alloc",
+    "dep:async-task",
+    "dep:pin-project-lite",
+]
 # Enables the components using memory allocation.
 # If no `std` flag, `alloc` crate is internally used instead. This flag is mainly for `no_std` build.
-alloc = []
+alloc = ["allocator-api2/alloc"]
+# Enables serde support for some of the provided types.
+serde = [
+    "allocator-api2/serde",
+]
 # Enables the components using `std` crate.
-# Currently the only difference to `alloc` flag is `std::error::Error` implementation.
-std = ["alloc"]
-# Build our own copy of the NGINX by default.
-# This could be disabled with `--no-default-features` to minimize the dependency
-# tree when building against an existing copy of the NGINX with the
-# NGINX_SOURCE_DIR/NGINX_BUILD_DIR variables.
+std = [
+    "alloc",
+    "allocator-api2/std"
+]
+# Build our own copy of the NGINX from `nginx-src` crate.
 vendored = ["nginx-sys/vendored"]
 
 [badges]
 maintenance = { status = "experimental" }
 
 [dev-dependencies]
-target-triple = "0.1.2"
+tempfile = { version = "3.20.0", default-features = false }

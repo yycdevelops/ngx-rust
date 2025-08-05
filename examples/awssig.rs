@@ -6,10 +6,10 @@ use ngx::ffi::{
     ngx_array_push, ngx_command_t, ngx_conf_t, ngx_http_handler_pt, ngx_http_module_t,
     ngx_http_phases_NGX_HTTP_PRECONTENT_PHASE, ngx_int_t, ngx_module_t, ngx_str_t, ngx_uint_t,
     NGX_CONF_TAKE1, NGX_HTTP_LOC_CONF, NGX_HTTP_LOC_CONF_OFFSET, NGX_HTTP_MODULE,
-    NGX_HTTP_SRV_CONF,
+    NGX_HTTP_SRV_CONF, NGX_LOG_EMERG,
 };
 use ngx::http::*;
-use ngx::{http_request_handler, ngx_log_debug_http, ngx_string};
+use ngx::{http_request_handler, ngx_conf_log_error, ngx_log_debug_http, ngx_string};
 
 struct Module;
 
@@ -175,8 +175,18 @@ extern "C" fn ngx_http_awssigv4_commands_set_enable(
 ) -> *mut c_char {
     unsafe {
         let conf = &mut *(conf as *mut ModuleConfig);
-        let args = (*(*cf).args).elts as *mut ngx_str_t;
-        let val = (*args.add(1)).to_str();
+        let args: &[ngx_str_t] = (*(*cf).args).as_slice();
+        let val = match args[1].to_str() {
+            Ok(s) => s,
+            Err(_) => {
+                ngx_conf_log_error!(
+                    NGX_LOG_EMERG,
+                    cf,
+                    "`awssigv4` argument is not utf-8 encoded"
+                );
+                return ngx::core::NGX_CONF_ERROR;
+            }
+        };
 
         // set default value optionally
         conf.enable = false;
@@ -188,7 +198,7 @@ extern "C" fn ngx_http_awssigv4_commands_set_enable(
         }
     };
 
-    std::ptr::null_mut()
+    ngx::core::NGX_CONF_OK
 }
 
 extern "C" fn ngx_http_awssigv4_commands_set_access_key(
@@ -198,11 +208,11 @@ extern "C" fn ngx_http_awssigv4_commands_set_access_key(
 ) -> *mut c_char {
     unsafe {
         let conf = &mut *(conf as *mut ModuleConfig);
-        let args = (*(*cf).args).elts as *mut ngx_str_t;
-        conf.access_key = (*args.add(1)).to_string();
+        let args: &[ngx_str_t] = (*(*cf).args).as_slice();
+        conf.access_key = args[1].to_string();
     };
 
-    std::ptr::null_mut()
+    ngx::core::NGX_CONF_OK
 }
 
 extern "C" fn ngx_http_awssigv4_commands_set_secret_key(
@@ -212,11 +222,11 @@ extern "C" fn ngx_http_awssigv4_commands_set_secret_key(
 ) -> *mut c_char {
     unsafe {
         let conf = &mut *(conf as *mut ModuleConfig);
-        let args = (*(*cf).args).elts as *mut ngx_str_t;
-        conf.secret_key = (*args.add(1)).to_string();
+        let args: &[ngx_str_t] = (*(*cf).args).as_slice();
+        conf.secret_key = args[1].to_string();
     };
 
-    std::ptr::null_mut()
+    ngx::core::NGX_CONF_OK
 }
 
 extern "C" fn ngx_http_awssigv4_commands_set_s3_bucket(
@@ -226,14 +236,15 @@ extern "C" fn ngx_http_awssigv4_commands_set_s3_bucket(
 ) -> *mut c_char {
     unsafe {
         let conf = &mut *(conf as *mut ModuleConfig);
-        let args = (*(*cf).args).elts as *mut ngx_str_t;
-        conf.s3_bucket = (*args.add(1)).to_string();
+        let args: &[ngx_str_t] = (*(*cf).args).as_slice();
+        conf.s3_bucket = args[1].to_string();
         if conf.s3_bucket.len() == 1 {
             println!("Validation failed");
-            return ngx::core::NGX_CONF_ERROR as _;
+            return ngx::core::NGX_CONF_ERROR;
         }
     };
-    std::ptr::null_mut()
+
+    ngx::core::NGX_CONF_OK
 }
 
 extern "C" fn ngx_http_awssigv4_commands_set_s3_endpoint(
@@ -247,7 +258,7 @@ extern "C" fn ngx_http_awssigv4_commands_set_s3_endpoint(
         conf.s3_endpoint = (*args.add(1)).to_string();
     };
 
-    std::ptr::null_mut()
+    ngx::core::NGX_CONF_OK
 }
 
 http_request_handler!(awssigv4_header_handler, |request: &mut Request| {
@@ -285,8 +296,16 @@ http_request_handler!(awssigv4_header_handler, |request: &mut Request| {
         // Copy only headers that will be used to sign the request
         let mut headers = HeaderMap::new();
         for (name, value) in request.headers_in_iterator() {
-            if name.to_lowercase() == "host" {
-                headers.insert(http::header::HOST, value.parse().unwrap());
+            if let Ok(name) = name.to_str() {
+                if name.to_lowercase() == "host" {
+                    if let Ok(value) = http::HeaderValue::from_bytes(value.as_bytes()) {
+                        headers.insert(http::header::HOST, value);
+                    } else {
+                        return core::Status::NGX_DECLINED;
+                    }
+                }
+            } else {
+                return core::Status::NGX_DECLINED;
             }
         }
         headers.insert("X-Amz-Date", datetime_now.parse().unwrap());
@@ -312,12 +331,11 @@ http_request_handler!(awssigv4_header_handler, |request: &mut Request| {
     request.add_header_in("authorization", signature.as_str());
     request.add_header_in("X-Amz-Date", datetime_now.as_str());
 
-    // done signing, let's print values we have in request.headers_out, request.headers_in
     for (name, value) in request.headers_out_iterator() {
-        ngx_log_debug_http!(request, "headers_out {}: {}", name, value);
+        ngx_log_debug_http!(request, "headers_out {name}: {value}",);
     }
     for (name, value) in request.headers_in_iterator() {
-        ngx_log_debug_http!(request, "headers_in  {}: {}", name, value);
+        ngx_log_debug_http!(request, "headers_in  {name}: {value}",);
     }
 
     core::Status::NGX_OK
